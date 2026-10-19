@@ -2,7 +2,28 @@
 
 台股相對強弱與輪動分析的本機網站，提供 Stock Move、Sector Move、日／週分析、觀察清單、儲存檢視、帳號權限、行情版本與備份還原。
 
-此儲存庫保留網站原始碼、固定版本套件清單、執行與建置工具，以及正式主機交付時必須通過的測試。階段報告、產品討論、展示截圖、已建置展示快照及 GitHub 自動交付工作流程不隨程式提供。
+此儲存庫保留網站原始碼、固定版本套件清單、執行與建置工具、正式主機交付時必須通過的測試，以及下列介面示意圖。階段報告、產品討論、已建置展示快照及 GitHub 自動交付工作流程不隨程式提供。
+
+## 介面示意圖
+
+下列四張沿用先前的原型示意圖，依「匿名日頻 → Free 日頻 → Pro 日頻 → Pro 週頻」排列。所有圖表數值均為 **DEMO 模擬資料，不代表真實行情**；圖片呈現原型設計，實際功能與畫面以目前程式為準。
+
+Period 是觀察期間，Trail 是最多顯示的有效軌跡點數。圖中設定如下，實際軌跡仍取決於資料歷史：
+
+| 方案與頻率 | Period | Trail |
+| --- | ---: | ---: |
+| Anonymous（匿名）· Daily（日頻） | 20D | 5 |
+| Free · Daily（日頻） | 120D | 20 |
+| Pro · Daily（日頻） | 240D | 240 |
+| Pro · Weekly（週頻） | 52W | 52 |
+
+![匿名日頻固定設定的介面示意](docs/showcase/anonymous-daily-max-demo.png)
+
+![Free 日頻最大設定的介面示意](docs/showcase/free-daily-max-demo.png)
+
+![Pro 日頻最大設定的介面示意](docs/showcase/pro-daily-max-demo.png)
+
+![Pro 週頻最大設定的介面示意](docs/showcase/pro-weekly-max-demo.png)
 
 ## 環境與本機啟動
 

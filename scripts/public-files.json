@@ -7,8 +7,10 @@
   "public/assets/twstockrs/licenses/Oxanium-OFL.txt",
   "public/assets/twstockrs/social/og-image-1200x630.png",
   "public/favicon.svg",
+  "public/samples/README.md",
   "public/samples/import-invalid.json",
   "public/samples/import-revision.json",
+  "public/samples/import-v2-valid.json",
   "public/samples/import-valid.json",
   "public/samples/rs-test.json"
 ]

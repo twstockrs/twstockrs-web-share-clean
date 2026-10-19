@@ -4,6 +4,101 @@
 
 此儲存庫保留網站原始碼、固定版本套件清單、執行與建置工具、正式主機交付時必須通過的測試，以及下列介面示意圖。階段報告、產品討論、已建置展示快照及 GitHub 自動交付工作流程不隨程式提供。
 
+## 計算方法與原版 RRG／JdK 的差異
+
+TWStockRS 的實際行情運算使用自訂 **`rs_v1` 滾動標準化算法**。它採用相對強弱與動能的四象限視覺概念，**不是原版 JdK RS-Ratio／JdK RS-Momentum 的實作，也不宣稱數值等價**。本節描述啟用資料版本後的計算；內建 DEMO 路徑另為合成展示資料。
+
+### 目前使用的公式
+
+令 `P[t]` 為標的價格或本專案產業序列，`B[t]` 為所選基準，`N` 為 Period，`t` 為有效配對觀測的位置：
+
+```text
+q[t]  = P[t] / B[t]
+L[t]  = z_N(q)[t]                  # RS Level，橫軸
+dL[t] = L[t] - L[t-1]
+M[t]  = z_N(dL)[t]                 # RS Momentum，縱軸
+
+z_N(x)[t] = (x[t] - mean_N(x)[t]) / std_pop_N(x)[t]
+```
+
+`mean_N` 與 `std_pop_N` 均取最近 N 筆對應序列；標準差採**母體標準差，變異數除以 N**。兩次標準化使用同一個 Period；計算中沒有另加移動平均或指數平滑。Trail 只控制顯示多少個有效歷史點，不改公式。
+
+- `L > 0` 代表目前價格比值高於該標的自己的 N 期平均，**不等於 N 期累積報酬必定跑贏基準**，也不是市場橫截面排名、百分比報酬或 RSI。
+- `M > 0` 代表最新 Level 變化高於近期平均變化，**不保證 Level 本身正在上升**。
+- 一般至少需要 **2N 筆有效配對觀測**才可能取得完整座標。標準差為零或變化小到無法可靠計算時，回報無結果或歷史不足，不補成 `(0, 0)`。
+- 四象限以 `(0, 0)` 分界，保留 Leading、Weakening、Lagging、Improving 名稱。曲線只改連線外觀，不修改計算座標或增加資料觀測點。
+
+### 與原版的主要差異
+
+以下「原版」指 RRG Research 的 RRG／JdK 指標，而非本專案先前版本。
+
+| 比較項目 | 原版 RRG／JdK | TWStockRS `rs_v1` |
+| --- | --- | --- |
+| 計算核心 | JdK 專有標準化指標 | 上述公開可查的兩階段滾動 Z-score |
+| 橫軸 | JdK RS-Ratio，描述相對表現趨勢 | 價格比值相對自身歷史平均的位置 |
+| 縱軸 | JdK RS-Momentum，描述 RS-Ratio 的動能 | Level 單期差分的標準化位置 |
+| 座標中心 | `(100, 100)` | `(0, 0)` |
+| 結果對照 | 使用原版指標定義 | 數值、象限與轉折時間可能不同，不能直接互換 |
+
+**把本專案座標各加 100，只是平移，不會變成原版 JdK 指標。** 此處只比較官方公開說明與本專案程式，不推測或重建未公開的 JdK 計算細節。
+
+### 取價與產業序列
+
+- Raw／Adjusted 依所選資料欄位計算；標的與基準使用同日有效價格配對。週頻取已完成週內最近的同日有效配對，而非把日頻座標平均；遇來源資料缺漏則回報不可用，不跨過缺漏假裝有效。
+- 沒有可配對的新價格（例如已確認停牌或無新價格）時，不新增個股 RS 觀測點；資料缺漏或個股市場區段改變會中斷或重置計算視窗，不補假價格。
+- 產業序列由歷史成分股的**等權日報酬累乘**建立，起始基期為 100，並非交易所官方加權產業指數。已確認停牌／無成交且有有效前價參考時，成分的運算報酬可記為零；這不會修改原始價格或成交量，來源未知也不能當成零報酬。
+
+實作與既有核對案例：[RS 引擎](server/rsEngine.ts)、[RS 測試](tests/rs-core.test.mjs)、[曲線繪製](components/twstock/safeCurve.ts)。原版比較來源：[StockCharts 指標說明](https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rrg-relative-strength)、[Julius de Kempenaer 於 CMT Association 的說明](https://cmtassociation.org/technically_speaking/technically-speaking-july-2015/)。
+
+## English — Methodology and differences from RRG/JdK
+
+TWStockRS computes imported-data results with its own **`rs_v1` rolling standardization method**. It uses a four-quadrant view of relative strength and momentum, but **does not implement the original JdK RS-Ratio or JdK RS-Momentum indicators and does not claim numerical equivalence**. Built-in DEMO paths are separate synthetic illustrations.
+
+### Calculation
+
+Let `P[t]` be the instrument price or the project’s sector series, `B[t]` the selected benchmark, `N` the Period, and `t` the position among valid paired observations:
+
+```text
+q[t]  = P[t] / B[t]
+L[t]  = z_N(q)[t]                  # RS Level, horizontal axis
+dL[t] = L[t] - L[t-1]
+M[t]  = z_N(dL)[t]                 # RS Momentum, vertical axis
+
+z_N(x)[t] = (x[t] - mean_N(x)[t]) / std_pop_N(x)[t]
+```
+
+Each rolling window uses N observations and the **population standard deviation, with variance divided by N**. Both stages use the same Period. No additional moving-average or exponential smoothing is applied to the calculation. Trail changes only the number of valid historical points displayed.
+
+- Positive Level means the current price ratio exceeds its own rolling mean. It does not necessarily mean positive cumulative excess return over N periods, and it is not a cross-sectional rank, percentage return, or RSI.
+- Positive Momentum means the latest Level change exceeds its rolling mean change; Level itself need not be increasing.
+- At least **2N valid paired observations** are normally needed before a complete coordinate can be available. Degenerate or numerically unreliable variance produces an undefined or insufficient-history result rather than a fabricated `(0, 0)`.
+- The quadrant boundary is `(0, 0)`, using the Leading, Weakening, Lagging and Improving names. Curve rendering changes only the connecting geometry, not calculated coordinates or data observations.
+
+### Comparison with the original indicators
+
+“Original” here means RRG Research’s RRG/JdK indicators, not an earlier TWStockRS release.
+
+| Aspect | Original RRG/JdK | TWStockRS `rs_v1` |
+| --- | --- | --- |
+| Core method | Proprietary JdK normalized indicators | The disclosed two-stage rolling Z-score above |
+| Horizontal axis | JdK RS-Ratio: relative-performance trend | Price ratio’s position within its own history |
+| Vertical axis | JdK RS-Momentum: momentum of RS-Ratio | Standardized one-observation change in Level |
+| Center | `(100, 100)` | `(0, 0)` |
+| Outputs | Original indicator definitions | Values, quadrants and turning dates can differ and are not interchangeable |
+
+**Adding 100 to each TWStockRS coordinate only shifts the origin; it does not reproduce JdK indicators.** This comparison uses published descriptions and this repository’s code, without guessing undisclosed JdK internals.
+
+### Prices and sectors
+
+Raw or Adjusted fields follow the selected input version. Instrument and benchmark observations must share a valid pricing date. Weekly results use the latest valid same-day pair within a completed week, not averaged daily coordinates; unavailable source data is reported rather than skipped as though valid.
+
+An endpoint with no new valid price pair, such as a confirmed suspension/non-trading endpoint, does not create a new stock RS observation. Unavailable data or a change in a stock’s market segment interrupts or resets the calculation window. No substitute prices are invented.
+
+Sector series compound **equal-weight daily returns using historical membership**, starting at 100; they are not official exchange-weighted sector indices. A confirmed suspended/non-trading member with a valid reference price can contribute zero return to this calculation. Its original price and volume remain unchanged; unknown data cannot be treated as zero return.
+
+Implementation and existing checks: [RS engine](server/rsEngine.ts), [RS tests](tests/rs-core.test.mjs), [curve rendering](components/twstock/safeCurve.ts). Original-indicator references: [StockCharts](https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rrg-relative-strength) and [Julius de Kempenaer’s CMT Association article](https://cmtassociation.org/technically_speaking/technically-speaking-july-2015/).
+
+
 ## 介面示意圖
 
 下列四張沿用先前的原型示意圖，依「匿名日頻 → Free 日頻 → Pro 日頻 → Pro 週頻」排列。所有圖表數值均為 **DEMO 模擬資料，不代表真實行情**；圖片呈現原型設計，實際功能與畫面以目前程式為準。

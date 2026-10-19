@@ -10,7 +10,7 @@ TWStockRS 的實際行情運算使用自訂 **`rs_v1` 滾動標準化算法**。
 
 ### 目前使用的公式
 
-令 $P_t$ 為標的價格或本專案產業序列，$B_t$ 為所選基準，$N$ 為 Period，$t$ 為有效配對觀測的位置；$L_t$ 是橫軸 RS Level，$M_t$ 是縱軸 RS Momentum：
+令 $`P_t`$ 為標的價格或本專案產業序列，$`B_t`$ 為所選基準，$`N`$ 為 Period，$`t`$ 為有效配對觀測的位置；$`L_t`$ 是橫軸 RS Level，$`M_t`$ 是縱軸 RS Momentum：
 
 ```math
 \begin{aligned}
@@ -29,7 +29,7 @@ Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
 \end{aligned}
 ```
 
-其中 $\mu_{N,t}$ 與 $\sigma_{N,t}$ 分別為最近 $N$ 筆對應序列的平均與標準差；標準差採**母體標準差，變異數除以 $N$**。兩次標準化使用同一個 Period；計算中沒有另加移動平均或指數平滑。Trail 只控制顯示多少個有效歷史點，不改公式。
+其中 $`\mu_{N,t}`$ 與 $`\sigma_{N,t}`$ 分別為最近 $`N`$ 筆對應序列的平均與標準差；標準差採**母體標準差，變異數除以 $`N`$**。兩次標準化使用同一個 Period；計算中沒有另加移動平均或指數平滑。Trail 只控制顯示多少個有效歷史點，不改公式。
 
 - `L > 0` 代表目前價格比值高於該標的自己的 N 期平均，**不等於 N 期累積報酬必定跑贏基準**，也不是市場橫截面排名、百分比報酬或 RSI。
 - `M > 0` 代表最新 Level 變化高於近期平均變化，**不保證 Level 本身正在上升**。
@@ -64,7 +64,7 @@ TWStockRS computes imported-data results with its own **`rs_v1` rolling standard
 
 ### Calculation
 
-Let $P_t$ be the instrument price or the project’s sector series, $B_t$ the selected benchmark, $N$ the Period, and $t$ the position among valid paired observations. $L_t$ is RS Level on the horizontal axis; $M_t$ is RS Momentum on the vertical axis:
+Let $`P_t`$ be the instrument price or the project’s sector series, $`B_t`$ the selected benchmark, $`N`$ the Period, and $`t`$ the position among valid paired observations. $`L_t`$ is RS Level on the horizontal axis; $`M_t`$ is RS Momentum on the vertical axis:
 
 ```math
 \begin{aligned}
@@ -83,7 +83,7 @@ Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
 \end{aligned}
 ```
 
-Here $\mu_{N,t}$ and $\sigma_{N,t}$ are the mean and standard deviation of the latest $N$ observations of the corresponding series. Each rolling window uses the **population standard deviation, with variance divided by $N$**. Both stages use the same Period. No additional moving-average or exponential smoothing is applied to the calculation. Trail changes only the number of valid historical points displayed.
+Here $`\mu_{N,t}`$ and $`\sigma_{N,t}`$ are the mean and standard deviation of the latest $`N`$ observations of the corresponding series. Each rolling window uses the **population standard deviation, with variance divided by $`N`$**. Both stages use the same Period. No additional moving-average or exponential smoothing is applied to the calculation. Trail changes only the number of valid historical points displayed.
 
 - Positive Level means the current price ratio exceeds its own rolling mean. It does not necessarily mean positive cumulative excess return over N periods, and it is not a cross-sectional rank, percentage return, or RSI.
 - Positive Momentum means the latest Level change exceeds its rolling mean change; Level itself need not be increasing.

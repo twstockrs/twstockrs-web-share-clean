@@ -1,0 +1,14 @@
+[
+  "public/assets/twstockrs/icons/apple-touch-icon.png",
+  "public/assets/twstockrs/icons/icon-192.png",
+  "public/assets/twstockrs/icons/icon-512.png",
+  "public/assets/twstockrs/icons/maskable-512.png",
+  "public/assets/twstockrs/icons/site.webmanifest",
+  "public/assets/twstockrs/licenses/Oxanium-OFL.txt",
+  "public/assets/twstockrs/social/og-image-1200x630.png",
+  "public/favicon.svg",
+  "public/samples/import-invalid.json",
+  "public/samples/import-revision.json",
+  "public/samples/import-valid.json",
+  "public/samples/rs-test.json"
+]

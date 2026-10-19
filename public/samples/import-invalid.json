@@ -1,0 +1,194 @@
+{
+  "format": "TWStockRS-price-import",
+  "version": 1,
+  "manifest": {
+    "batch_id": "test-errors-2026-09-v1",
+    "dataset_kind": "test",
+    "source": "TWStockRS synthetic acceptance fixture; not market data",
+    "source_version": "fixture-v1",
+    "created_at": "2026-10-15T00:00:00.000Z",
+    "date_from": "2026-09-13",
+    "date_to": "2026-09-15",
+    "markets": [
+      "TWSE",
+      "TPEx"
+    ],
+    "timezone": "Asia/Taipei",
+    "currency": "TWD",
+    "adjustment": {
+      "method": "synthetic-test-adjustment",
+      "version": "test-only-v1",
+      "reference_date": "2026-09-15"
+    }
+  },
+  "securities": [
+    {
+      "security_id": "test-stock-a",
+      "code": "9001",
+      "name": "測試股票A（非真實行情）",
+      "kind": "stock"
+    },
+    {
+      "security_id": "test-etf-b",
+      "code": "009001",
+      "name": "測試ETF B（非真實行情）",
+      "kind": "etf"
+    },
+    {
+      "security_id": "test-index-c",
+      "code": "9003",
+      "name": "測試指數C（非真實行情）",
+      "kind": "index"
+    }
+  ],
+  "market_periods": [
+    {
+      "segment_id": "test-a-tpex-1",
+      "security_id": "test-stock-a",
+      "market": "TPEx",
+      "valid_from": "2026-09-13",
+      "valid_to": "2026-09-15"
+    },
+    {
+      "segment_id": "test-a-twse-1",
+      "security_id": "test-stock-a",
+      "market": "TWSE",
+      "valid_from": "2026-09-15",
+      "valid_to": null
+    },
+    {
+      "segment_id": "test-b-twse-1",
+      "security_id": "test-etf-b",
+      "market": "TWSE",
+      "valid_from": "2026-09-13",
+      "valid_to": null
+    },
+    {
+      "segment_id": "test-c-twse-1",
+      "security_id": "test-index-c",
+      "market": "TWSE",
+      "valid_from": "2026-09-13",
+      "valid_to": null
+    }
+  ],
+  "calendar": [
+    {
+      "market": "TWSE",
+      "date": "2026-09-13",
+      "is_open": false
+    },
+    {
+      "market": "TPEx",
+      "date": "2026-09-13",
+      "is_open": false
+    },
+    {
+      "market": "TWSE",
+      "date": "2026-09-14",
+      "is_open": true
+    },
+    {
+      "market": "TPEx",
+      "date": "2026-09-14",
+      "is_open": true
+    },
+    {
+      "market": "TWSE",
+      "date": "2026-09-15",
+      "is_open": true
+    },
+    {
+      "market": "TPEx",
+      "date": "2026-09-15",
+      "is_open": true
+    }
+  ],
+  "sectors": [
+    {
+      "sector_id": "test-tpex-sector",
+      "market": "TPEx",
+      "name": "測試上櫃產業"
+    },
+    {
+      "sector_id": "test-twse-sector",
+      "market": "TWSE",
+      "name": "測試上市產業"
+    }
+  ],
+  "memberships": [
+    {
+      "security_id": "test-stock-a",
+      "sector_id": "test-tpex-sector",
+      "valid_from": "2026-09-13",
+      "valid_to": "2026-09-15"
+    },
+    {
+      "security_id": "test-stock-a",
+      "sector_id": "test-twse-sector",
+      "valid_from": "2026-09-15",
+      "valid_to": null
+    }
+  ],
+  "prices": [
+    {
+      "security_id": "test-stock-a",
+      "market": "TWSE",
+      "date": "2026-09-15",
+      "status": "suspended",
+      "raw_close": null,
+      "adjusted_close": null,
+      "volume": 0,
+      "reason": "test fixture: confirmed suspended"
+    },
+    {
+      "security_id": "test-etf-b",
+      "market": "TWSE",
+      "date": "2026-09-14",
+      "status": "traded",
+      "raw_close": 0,
+      "adjusted_close": 20,
+      "volume": 200,
+      "reason": null
+    },
+    {
+      "security_id": "test-etf-b",
+      "market": "TWSE",
+      "date": "2026-09-15",
+      "status": "no_trade",
+      "raw_close": null,
+      "adjusted_close": null,
+      "volume": 0,
+      "reason": null
+    },
+    {
+      "security_id": "test-index-c",
+      "market": "TWSE",
+      "date": "2026-09-14",
+      "status": "traded",
+      "raw_close": 20000,
+      "adjusted_close": 20000,
+      "volume": null,
+      "reason": null
+    },
+    {
+      "security_id": "test-index-c",
+      "market": "TWSE",
+      "date": "2026-09-15",
+      "status": "traded",
+      "raw_close": 21000,
+      "adjusted_close": 21000,
+      "volume": null,
+      "reason": null
+    },
+    {
+      "security_id": "test-index-c",
+      "market": "TWSE",
+      "date": "2026-09-15",
+      "status": "traded",
+      "raw_close": 21000,
+      "adjusted_close": 21000,
+      "volume": null,
+      "reason": null
+    }
+  ]
+}

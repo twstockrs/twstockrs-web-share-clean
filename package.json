@@ -1,0 +1,51 @@
+{
+  "name": "twstockrs-foundation-0",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "vite",
+    "build:server": "node scripts/build-server.mjs",
+    "start:api": "node server-dist/main.mjs",
+    "preview": "vite preview",
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "build:offline": "node scripts/build-offline.mjs",
+    "data:import": "node scripts/import-data.mjs",
+    "data:backup": "node scripts/backup-data.mjs",
+    "data:compare": "node scripts/compare-data.mjs",
+    "account": "node scripts/accounts.mjs",
+    "check:queue": "node --test tests/work-queue.test.mjs",
+    "check:stability": "node scripts/stability-check.mjs",
+    "build:host": "node scripts/build-host.mjs",
+    "host": "node scripts/host.mjs",
+    "host:package": "node scripts/package-release.mjs",
+    "check:host": "node --test tests/host.test.mjs",
+    "check:admin": "node --test tests/admin.test.mjs",
+    "verify:release": "node scripts/verify-release.mjs",
+    "check:release": "node --test tests/delivery.test.mjs",
+    "check:backup": "node --test --test-concurrency=1 tests/auto-backup.test.mjs tests/host.test.mjs",
+    "check:security": "node --test --test-concurrency=1 tests/security.test.mjs tests/auth.test.mjs tests/admin.test.mjs tests/data-import.test.mjs tests/frozen-share.test.mjs tests/system-backup.test.mjs",
+    "check:backup-encryption": "node --test tests/encrypted-backup.test.mjs"
+  },
+  "dependencies": {
+    "echarts": "6.1.0",
+    "lucide-react": "1.31.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3",
+    "vite": "8.0.16"
+  }
+}

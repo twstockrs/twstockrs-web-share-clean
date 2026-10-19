@@ -1,0 +1,20 @@
+export const monitorCodes = ['SERVICE_UNAVAILABLE','DISK_LOW','BACKUP_FAILED','BACKUP_OVERDUE','BACKUP_RETENTION','QUEUE_ERRORS','QUEUE_PRESSURE','TELEMETRY_UNAVAILABLE'] as const;
+export type MonitorCode = typeof monitorCodes[number];
+export const monitorLabels: Record<MonitorCode,string> = {
+ SERVICE_UNAVAILABLE:'服務中斷／重啟未完成',DISK_LOW:'主機剩餘空間不足',BACKUP_FAILED:'自動備份失敗',BACKUP_OVERDUE:'自動備份超過期限',BACKUP_RETENTION:'備份清理或目錄異常',QUEUE_ERRORS:'背景運算失敗或逾時增加',QUEUE_PRESSURE:'背景運算持續擁塞',TELEMETRY_UNAVAILABLE:'運作指標無法確認'
+};
+export type MonitorIncident = {id:string;code:MonitorCode;opened_at:number;recovered_at:number|null};
+export type MonitorNotification = {id:string;incident_id:string|null;code:MonitorCode|'TEST';kind:'alert'|'recovery'|'test';created_at:number;status:'pending'|'delivered'|'dead';attempts:number;next_at:number|null;delivered_at:number|null};
+export type MonitorSummary = {available:boolean;channel:'local-mock';at:number|null;stale:boolean;enabled:boolean;min_free_mb:number;backup_late_minutes:number;queue_errors:number;trigger_samples:number;recover_samples:number;fault:'MONITOR_STATE_INVALID'|'MONITOR_CAPACITY'|null;incidents:MonitorIncident[];notifications:MonitorNotification[];pending:number;dead:number;delivered:number};
+const exact=(v:any,keys:string)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===keys;
+const n=(v:any)=>Number.isSafeInteger(v)&&v>=0;
+const time=(v:any)=>v===null||n(v);
+const uuid=(v:any)=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(v);
+export function validIncident(v:any):v is MonitorIncident{return exact(v,'code,id,opened_at,recovered_at')&&uuid(v.id)&&monitorCodes.includes(v.code)&&n(v.opened_at)&&time(v.recovered_at)&&(v.recovered_at===null||v.recovered_at>=v.opened_at);}
+export function validNotification(v:any):v is MonitorNotification{return exact(v,'attempts,code,created_at,delivered_at,id,incident_id,kind,next_at,status')&&uuid(v.id)&&(uuid(v.incident_id)||v.incident_id===null)&&['alert','recovery','test'].includes(v.kind)&&(v.kind==='test'?v.code==='TEST'&&v.incident_id===null:monitorCodes.includes(v.code)&&uuid(v.incident_id))&&n(v.created_at)&&['pending','delivered','dead'].includes(v.status)&&n(v.attempts)&&v.attempts<=5&&time(v.next_at)&&time(v.delivered_at)&&(v.status==='pending'?v.next_at!==null&&v.delivered_at===null:v.next_at===null)&&(v.status==='delivered'?v.delivered_at!==null:v.delivered_at===null);}
+export function decodeMonitor(v:any):MonitorSummary{
+ if(!exact(v,'at,available,backup_late_minutes,channel,dead,delivered,enabled,fault,incidents,min_free_mb,notifications,pending,queue_errors,recover_samples,stale,trigger_samples')||typeof v.available!=='boolean'||typeof v.enabled!=='boolean'||typeof v.stale!=='boolean'||v.channel!=='local-mock'||!time(v.at)||!['MONITOR_STATE_INVALID','MONITOR_CAPACITY',null].includes(v.fault)||!n(v.min_free_mb)||v.min_free_mb<64||v.min_free_mb>1048576||!n(v.backup_late_minutes)||v.backup_late_minutes<5||v.backup_late_minutes>10080||!n(v.queue_errors)||v.queue_errors<1||v.queue_errors>1000||!n(v.trigger_samples)||v.trigger_samples<1||v.trigger_samples>30||!n(v.recover_samples)||v.recover_samples<1||v.recover_samples>30||!Array.isArray(v.incidents)||v.incidents.length>200||!v.incidents.every(validIncident)||!Array.isArray(v.notifications)||v.notifications.length>400||!v.notifications.every(validNotification)||['pending','dead','delivered'].some(k=>!n(v[k])||v[k]!==v.notifications.filter((x:any)=>x.status===k).length)||new Set(v.incidents.map((x:any)=>x.id)).size!==v.incidents.length||new Set(v.notifications.map((x:any)=>x.id)).size!==v.notifications.length)throw Error('監控與通知摘要不正確。');
+ for(const code of monitorCodes)if(v.incidents.filter((x:MonitorIncident)=>x.code===code&&x.recovered_at===null).length>1)throw Error('監控事件重複。');
+ for(const x of v.notifications)if(x.incident_id!==null&&!v.incidents.some((i:MonitorIncident)=>i.id===x.incident_id&&i.code===x.code&&(x.kind!=='recovery'||i.recovered_at!==null)))throw Error('通知缺少對應事件。');
+ return v;
+}

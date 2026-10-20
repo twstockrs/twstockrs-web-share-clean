@@ -1,4 +1,4 @@
-# TWStockRS
+# TWStockRS（Relative Strength）
 
 [繁體中文](#twstockrs) · [English](#english)
 

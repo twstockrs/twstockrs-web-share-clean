@@ -1,5 +1,7 @@
 # TWStockRS
 
+[繁體中文](#twstockrs) · [English](#english)
+
 台股相對強弱與輪動分析的本機網站，提供 Stock Move、Sector Move、日／週分析、觀察清單、儲存檢視、帳號權限、行情版本與備份還原。
 
 此儲存庫保留網站原始碼、固定版本套件清單、執行與建置工具、正式主機交付時必須通過的測試，以及下列介面示意圖。階段報告、產品討論、已建置展示快照及 GitHub 自動交付工作流程不隨程式提供。
@@ -29,11 +31,11 @@ Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
 \end{aligned}
 ```
 
-其中 $`\mu_{N,t}`$ 與 $`\sigma_{N,t}`$ 分別為最近 $`N`$ 筆對應序列的平均與標準差；標準差採**母體標準差，變異數除以 $`N`$**。兩次標準化使用同一個 Period；計算中沒有另加移動平均或指數平滑。Trail 只控制顯示多少個有效歷史點，不改公式。
+其中 $`\mu_{N,t}`$ 與 $`\sigma_{N,t}`$ 分別為最近 $`N`$ 筆對應序列的平均與標準差；標準差採**母體標準差，變異數除以 $`N`$**。兩次標準化使用同一個 Period；除上述滾動平均與標準差外，沒有額外移動平均或指數平滑。程式以中心化與縮放提高浮點運算穩定性，並以相對機器精度門檻排除無法可靠計算的微小變化；上述公式描述其數學定義。Trail 只控制顯示多少個有效歷史點，不改公式。
 
 - `L > 0` 代表目前價格比值高於該標的自己的 N 期平均，**不等於 N 期累積報酬必定跑贏基準**，也不是市場橫截面排名、百分比報酬或 RSI。
 - `M > 0` 代表最新 Level 變化高於近期平均變化，**不保證 Level 本身正在上升**。
-- 一般至少需要 **2N 筆有效配對觀測**才可能取得完整座標。標準差為零或變化小到無法可靠計算時，回報無結果或歷史不足，不補成 `(0, 0)`。
+- 若某一配對位置的 Level 或差分未定義，該位置會保留為未定義，不跳過它向更早的 Level 借值。一般至少需要 **2N 筆有效配對觀測**才可能取得完整座標。標準差為零或變化小到無法可靠計算時，回報無結果或歷史不足，不補成 `(0, 0)`。
 - 四象限以 `(0, 0)` 分界，保留 Leading、Weakening、Lagging、Improving 名稱。曲線只改連線外觀，不修改計算座標或增加資料觀測點。
 
 ### 與原版的主要差異
@@ -44,7 +46,7 @@ Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
 | --- | --- | --- |
 | 計算核心 | JdK 專有標準化指標 | 上述公開可查的兩階段滾動 Z-score |
 | 橫軸 | JdK RS-Ratio，描述相對表現趨勢 | 價格比值相對自身歷史平均的位置 |
-| 縱軸 | JdK RS-Momentum，描述 RS-Ratio 的動能 | Level 單期差分的標準化位置 |
+| 縱軸 | JdK RS-Momentum，標準化的 RS-Ratio 變動率指標 | Level 單期差分的標準化位置 |
 | 座標中心 | `(100, 100)` | `(0, 0)` |
 | 結果對照 | 使用原版指標定義 | 數值、象限與轉折時間可能不同，不能直接互換 |
 
@@ -57,63 +59,6 @@ Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
 - 產業序列由歷史成分股的**等權日報酬累乘**建立，起始基期為 100，並非交易所官方加權產業指數。已確認停牌／無成交且有有效前價參考時，成分的運算報酬可記為零；這不會修改原始價格或成交量，來源未知也不能當成零報酬。
 
 實作與既有核對案例：[RS 引擎](server/rsEngine.ts)、[RS 測試](tests/rs-core.test.mjs)、[曲線繪製](components/twstock/safeCurve.ts)。原版比較來源：[StockCharts 指標說明](https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rrg-relative-strength)、[Julius de Kempenaer 於 CMT Association 的說明](https://cmtassociation.org/technically_speaking/technically-speaking-july-2015/)。
-
-## English — Methodology and differences from RRG/JdK
-
-TWStockRS computes imported-data results with its own **`rs_v1` rolling standardization method**. It uses a four-quadrant view of relative strength and momentum, but **does not implement the original JdK RS-Ratio or JdK RS-Momentum indicators and does not claim numerical equivalence**. Built-in DEMO paths are separate synthetic illustrations.
-
-### Calculation
-
-Let $`P_t`$ be the instrument price or the project’s sector series, $`B_t`$ the selected benchmark, $`N`$ the Period, and $`t`$ the position among valid paired observations. $`L_t`$ is RS Level on the horizontal axis; $`M_t`$ is RS Momentum on the vertical axis:
-
-```math
-\begin{aligned}
-q_t &= \frac{P_t}{B_t}, \\
-L_t &= Z_{N,t}(q), \\
-\Delta L_t &= L_t-L_{t-1}, \\
-M_t &= Z_{N,t}(\Delta L).
-\end{aligned}
-```
-
-```math
-\begin{aligned}
-\mu_{N,t}(x) &= \frac{1}{N}\sum_{i=0}^{N-1}x_{t-i}, \\
-\sigma_{N,t}(x) &= \sqrt{\frac{1}{N}\sum_{i=0}^{N-1}\left(x_{t-i}-\mu_{N,t}(x)\right)^2}, \\
-Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
-\end{aligned}
-```
-
-Here $`\mu_{N,t}`$ and $`\sigma_{N,t}`$ are the mean and standard deviation of the latest $`N`$ observations of the corresponding series. Each rolling window uses the **population standard deviation, with variance divided by $`N`$**. Both stages use the same Period. No additional moving-average or exponential smoothing is applied to the calculation. Trail changes only the number of valid historical points displayed.
-
-- Positive Level means the current price ratio exceeds its own rolling mean. It does not necessarily mean positive cumulative excess return over N periods, and it is not a cross-sectional rank, percentage return, or RSI.
-- Positive Momentum means the latest Level change exceeds its rolling mean change; Level itself need not be increasing.
-- At least **2N valid paired observations** are normally needed before a complete coordinate can be available. Degenerate or numerically unreliable variance produces an undefined or insufficient-history result rather than a fabricated `(0, 0)`.
-- The quadrant boundary is `(0, 0)`, using the Leading, Weakening, Lagging and Improving names. Curve rendering changes only the connecting geometry, not calculated coordinates or data observations.
-
-### Comparison with the original indicators
-
-“Original” here means RRG Research’s RRG/JdK indicators, not an earlier TWStockRS release.
-
-| Aspect | Original RRG/JdK | TWStockRS `rs_v1` |
-| --- | --- | --- |
-| Core method | Proprietary JdK normalized indicators | The disclosed two-stage rolling Z-score above |
-| Horizontal axis | JdK RS-Ratio: relative-performance trend | Price ratio’s position within its own history |
-| Vertical axis | JdK RS-Momentum: momentum of RS-Ratio | Standardized one-observation change in Level |
-| Center | `(100, 100)` | `(0, 0)` |
-| Outputs | Original indicator definitions | Values, quadrants and turning dates can differ and are not interchangeable |
-
-**Adding 100 to each TWStockRS coordinate only shifts the origin; it does not reproduce JdK indicators.** This comparison uses published descriptions and this repository’s code, without guessing undisclosed JdK internals.
-
-### Prices and sectors
-
-Raw or Adjusted fields follow the selected input version. Instrument and benchmark observations must share a valid pricing date. Weekly results use the latest valid same-day pair within a completed week, not averaged daily coordinates; unavailable source data is reported rather than skipped as though valid.
-
-An endpoint with no new valid price pair, such as a confirmed suspension/non-trading endpoint, does not create a new stock RS observation. Unavailable data or a change in a stock’s market segment interrupts or resets the calculation window. No substitute prices are invented.
-
-Sector series compound **equal-weight daily returns using historical membership**, starting at 100; they are not official exchange-weighted sector indices. A confirmed suspended/non-trading member with a valid reference price can contribute zero return to this calculation. Its original price and volume remain unchanged; unknown data cannot be treated as zero return.
-
-Implementation and existing checks: [RS engine](server/rsEngine.ts), [RS tests](tests/rs-core.test.mjs), [curve rendering](components/twstock/safeCurve.ts). Original-indicator references: [StockCharts](https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rrg-relative-strength) and [Julius de Kempenaer’s CMT Association article](https://cmtassociation.org/technically_speaking/technically-speaking-july-2015/).
-
 
 ## 介面示意圖
 
@@ -220,3 +165,173 @@ node delivery/TWStockRS-local.host.mjs run --root NEW_HOST_DIR
 預設開啟 <http://127.0.0.1:8890/>，其他終端機可執行 `node delivery/TWStockRS-local.host.mjs status --root NEW_HOST_DIR` 查狀態，或將 `status` 換成 `stop` 正常停止。不要用新主機指向正在運行的正式資料，也不要在未完成備份與驗證時替換既有主機。
 
 本庫不再以 GitHub Actions 自動建立與保存交付包；需要驗證或交付時在本機執行上述指令。Pro 的日／週日期選擇可使用已啟用行情版本的完整歷史，涵蓋完整四年；最多每頻率 3661 個端點。這不改變 RS 日頻 Period／Trail 240、週頻 52 的上限，也不補出早期缺少的觀測。播放會準備行情最新日期，含最新日期回算目前 Trail 數的真實觀測，再由舊到新顯示；過程固定視野與最新點的顏色。Anonymous／Free 權限維持既有規則。此庫不附實際行情，使用者仍須對自己的來源版本驗收。
+
+---
+
+## English
+
+TWStockRS is a local web application for Taiwan stock relative-strength and rotation analysis. It provides Stock Move, Sector Move, daily and weekly analysis, watchlists, saved views, account permissions, market-data versions, and backup/restore.
+
+This repository contains application source, locked package versions, run/build tools, tests required for a verified standalone-host delivery, and the interface illustrations below. Project reports, product discussions, built demo snapshots, and GitHub automated-delivery workflows are excluded.
+
+### Methodology and differences from RRG/JdK
+
+TWStockRS computes imported-data results with its own **`rs_v1` rolling standardization method**. It uses a four-quadrant view of relative strength and momentum, but **does not implement the original JdK RS-Ratio or JdK RS-Momentum indicators and does not claim numerical equivalence**. Built-in DEMO paths are separate synthetic illustrations.
+
+#### Calculation
+
+Let $`P_t`$ be the instrument price or the project’s sector series, $`B_t`$ the selected benchmark, $`N`$ the Period, and $`t`$ the position among valid paired observations. $`L_t`$ is RS Level on the horizontal axis; $`M_t`$ is RS Momentum on the vertical axis:
+
+```math
+\begin{aligned}
+q_t &= \frac{P_t}{B_t}, \\
+L_t &= Z_{N,t}(q), \\
+\Delta L_t &= L_t-L_{t-1}, \\
+M_t &= Z_{N,t}(\Delta L).
+\end{aligned}
+```
+
+```math
+\begin{aligned}
+\mu_{N,t}(x) &= \frac{1}{N}\sum_{i=0}^{N-1}x_{t-i}, \\
+\sigma_{N,t}(x) &= \sqrt{\frac{1}{N}\sum_{i=0}^{N-1}\left(x_{t-i}-\mu_{N,t}(x)\right)^2}, \\
+Z_{N,t}(x) &= \frac{x_t-\mu_{N,t}(x)}{\sigma_{N,t}(x)}.
+\end{aligned}
+```
+
+Here $`\mu_{N,t}`$ and $`\sigma_{N,t}`$ are the mean and standard deviation of the latest $`N`$ observations of the corresponding series. Each rolling window uses the **population standard deviation, with variance divided by $`N`$**. Both stages use the same Period. No extra moving-average or exponential smoothing is applied beyond the rolling mean and standard deviation above. The implementation centers and scales values for floating-point stability and rejects tiny variations using a relative machine-precision threshold; the equations describe its mathematical definition. Trail changes only the number of valid historical points displayed.
+
+- Positive Level means the current price ratio exceeds its own rolling mean. It does not necessarily mean positive cumulative excess return over N periods, and it is not a cross-sectional rank, percentage return, or RSI.
+- Positive Momentum means the latest Level change exceeds its rolling mean change; Level itself need not be increasing.
+- An undefined Level or difference retains its paired-observation position; the calculation does not skip it to borrow an older Level. At least **2N valid paired observations** are normally needed before a complete coordinate can be available. Degenerate or numerically unreliable variance produces an undefined or insufficient-history result rather than a fabricated `(0, 0)`.
+- The quadrant boundary is `(0, 0)`, using the Leading, Weakening, Lagging and Improving names. Curve rendering changes only the connecting geometry, not calculated coordinates or data observations.
+
+#### Comparison with the original indicators
+
+“Original” here means RRG Research’s RRG/JdK indicators, not an earlier TWStockRS release.
+
+| Aspect | Original RRG/JdK | TWStockRS `rs_v1` |
+| --- | --- | --- |
+| Core method | Proprietary JdK normalized indicators | The disclosed two-stage rolling Z-score above |
+| Horizontal axis | JdK RS-Ratio: relative-performance trend | Price ratio’s position within its own history |
+| Vertical axis | JdK RS-Momentum: normalized rate of change of RS-Ratio | Standardized one-observation change in Level |
+| Center | `(100, 100)` | `(0, 0)` |
+| Outputs | Original indicator definitions | Values, quadrants and turning dates can differ and are not interchangeable |
+
+**Adding 100 to each TWStockRS coordinate only shifts the origin; it does not reproduce JdK indicators.** This comparison uses published descriptions and this repository’s code, without guessing undisclosed JdK internals.
+
+#### Prices and sectors
+
+Raw or Adjusted fields follow the selected input version. Instrument and benchmark observations must share a valid pricing date. Weekly results use the latest valid same-day pair within a completed week, not averaged daily coordinates; unavailable source data is reported rather than skipped as though valid.
+
+An endpoint with no new valid price pair, such as a confirmed suspension/non-trading endpoint, does not create a new stock RS observation. Unavailable data or a change in a stock’s market segment interrupts or resets the calculation window. No substitute prices are invented.
+
+Sector series compound **equal-weight daily returns using historical membership**, starting at 100; they are not official exchange-weighted sector indices. A confirmed suspended/non-trading member with a valid reference price can contribute zero return to this calculation. Its original price and volume remain unchanged; unknown data cannot be treated as zero return.
+
+Implementation and existing checks: [RS engine](server/rsEngine.ts), [RS tests](tests/rs-core.test.mjs), [curve rendering](components/twstock/safeCurve.ts). Original-indicator references: [StockCharts](https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rrg-relative-strength) and [Julius de Kempenaer’s CMT Association article](https://cmtassociation.org/technically_speaking/technically-speaking-july-2015/).
+
+### Interface illustrations
+
+The following four prototype illustrations are retained in this order: Anonymous daily, Free daily, Pro daily, and Pro weekly. All chart values are **synthetic DEMO data, not real market data**. They illustrate the prototype design; the current application determines actual behavior and appearance.
+
+Period is the calculation window. Trail is the maximum number of valid historical points displayed. The settings shown are listed below; available trails still depend on data history.
+
+| Plan and frequency | Period | Trail |
+| --- | ---: | ---: |
+| Anonymous · Daily | 20D | 5 |
+| Free · Daily | 120D | 20 |
+| Pro · Daily | 240D | 240 |
+| Pro · Weekly | 52W | 52 |
+
+![Anonymous daily prototype illustration](docs/showcase/anonymous-daily-max-demo.png)
+
+![Free daily prototype illustration at maximum settings](docs/showcase/free-daily-max-demo.png)
+
+![Pro daily prototype illustration at maximum settings](docs/showcase/pro-daily-max-demo.png)
+
+![Pro weekly prototype illustration at maximum settings](docs/showcase/pro-weekly-max-demo.png)
+
+### Requirements and local startup
+
+Use Node.js 22.13.0 or later and npm 11.6.2. Cloning the source also requires Git and access to this repository. Start in a new project directory and keep its data directory separate from existing hosts.
+
+```sh
+git clone https://github.com/twstockrs/twstockrs-web-share-clean.git
+cd twstockrs-web-share-clean
+npm ci
+npm run dev
+```
+
+Open <http://127.0.0.1:5173/>. This starts the frontend and local API together; press Ctrl+C to stop. Restart after changing `server/` or `shared/`. Data is stored in the project's `.local-data/` by default. Do not point it at another running host's data directory.
+
+`npm ci` installs the versions in `package-lock.json`; do not regenerate the lockfile just to start the application. This repository includes no domain, HTTPS, or public-deployment configuration.
+
+### Accounts
+
+There are no default accounts or passwords. Stop the backend before creating your own administrator:
+
+```sh
+npm run account -- create --username owner --role admin
+npm run account -- create --username member
+npm run account -- list
+```
+
+Enter and confirm a 15–128-character password through the hidden terminal prompts. Do not put passwords in commands or documents. `owner` and `member` are replaceable example usernames. Restart the application and sign in using the profile icon in the upper-right corner. Regular accounts default to Free; the administrator role is separate from the Pro analysis plan. Account disabling, password resets, and plan maintenance are also available through `npm run account --`. Stop any service sharing that data directory before command-line maintenance.
+
+### Market data and storage
+
+This repository contains no real market data, accounts, databases, private backups, or acceptance reports. Markets without an active input release use the built-in DEMO. Files in `public/samples/` are synthetic format examples downloadable from the admin interface; **they are not real market data**.
+
+Both [import v1](docs/資料匯入格式-v1.md) and [import v2](docs/資料匯入格式-v2.md) are supported.
+
+| Format | Synthetic example | Coverage |
+| --- | --- | --- |
+| v1 | [Download/view valid JSON](public/samples/import-valid.json) | Market transfers, suspensions, no trades, ETFs, and indices |
+| v2 | [Download/view valid JSON](public/samples/import-v2-valid.json) | Price/volume conventions, source references, positive volume without a price, and unknown volume |
+
+See the [sample notes and invalid test packages](public/samples/README.md). Every example is TEST-only synthetic data, **not real quotes or source evidence**.
+
+v2 preserves the distinction between regular-session prices and official full-day volume. Do not invent prices, replace positive volume with zero, or merely change a version number. Map actual source fields to the specification, check each import report and source coverage, then have an administrator create and activate the data release. The per-package limit is 512 MiB; split larger datasets by market or date. Do not fabricate prices, replace missing volume with zero, or use current market/industry membership to fill historical records.
+
+Accounts, lists, views, and data releases are stored in a private data directory. Updating code, downloading source, or switching browsers does not automatically restore another host's data. Never commit databases, backups, raw market data, or credentials to GitHub or include them in application delivery packages.
+
+### Backup and restore
+
+Browser backups preserve personal operating state and do not replace full backend backups containing market data, accounts, and databases. Encrypted full backups are recommended. Stop the backend and write the output to a private location outside the project:
+
+```sh
+npm run data:backup -- create-encrypted --data-dir PRIVATE_DATA_DIR --file PRIVATE_BACKUP_FILE.twrsbackup.enc
+npm run data:backup -- preview-encrypted --data-dir NEW_PRIVATE_DATA_DIR --file PRIVATE_BACKUP_FILE.twrsbackup.enc
+npm run data:backup -- restore-encrypted --data-dir NEW_PRIVATE_DATA_DIR --file PRIVATE_BACKUP_FILE.twrsbackup.enc --confirm PREVIEW_TOKEN
+```
+
+Replace uppercase placeholders with your own paths and the confirmation token returned by the preview. Enter the password through the hidden prompt. Review the preview, restore into a separate new directory, and verify login and analysis. Preserve working original data and do not overwrite original backups. Direct web downloads and automatic backups remain unencrypted and must be stored in a protected location.
+
+### Checks, builds, and a standalone local host
+
+```sh
+npm run check
+npm test
+npm run build
+npm run build:server
+```
+
+Frontend output is written to `dist/`, backend output to `server-dist/`. `npm run start:api` starts only the API; use `npm run dev` for normal local use. To produce a standalone-host delivery with full verification:
+
+```sh
+npm run verify:release -- --out delivery/TWStockRS-local.twrsrelease --id local
+node delivery/TWStockRS-local.preflight.mjs --release delivery/TWStockRS-local.twrsrelease
+```
+
+Full delivery verification runs tests, builds, and standalone-host checks. Missing tests or a failed step cannot count as a pass. `host:package` only packages files and does not replace `verify:release`. A separately generated offline HTML file uses DEMO data only; it is a build artifact and is not stored in this repository.
+
+Initialize a completely new host directory with the delivered manager:
+
+```sh
+node delivery/TWStockRS-local.host.mjs init --root NEW_HOST_DIR --release delivery/TWStockRS-local.twrsrelease
+node delivery/TWStockRS-local.host.mjs run --root NEW_HOST_DIR
+```
+
+The default address is <http://127.0.0.1:8890/>. From another terminal, run `node delivery/TWStockRS-local.host.mjs status --root NEW_HOST_DIR` to inspect status, or replace `status` with `stop` for a normal shutdown. Do not point a new host at a running production data directory or replace an existing host before backup and verification.
+
+This repository no longer uses GitHub Actions to build and retain delivery packages. Run the commands above locally when verification or delivery is needed. Pro's daily and weekly date selectors expose the active release's full available history, including a complete four-year range, up to 3661 endpoints per frequency. Daily Period/Trail limits remain 240, and weekly limits remain 52; missing early observations are not invented. Playback prepares the release's latest date, counts backward by the current Trail including the latest real observation, then reveals those observations from oldest to newest. The viewport and latest-point colors remain fixed during playback. Existing Anonymous/Free permissions remain in effect. No actual market data is supplied; users must validate their own source releases.
